@@ -70,9 +70,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   column: 0
   row: 0
+  previousColumn: 0
+  previousRow: 0
   targetX: 0
   targetY: 0
+  isMatched: 0
   swipeAngle: 0
+  swipeResist: 1
+  isColumnBomb: 0
+  isRowBomb: 0
+  rowArrow: {fileID: 1579852680687134, guid: a02ff770222a04641a657235dfa47eba, type: 2}
+  columnArrow: {fileID: 1226396946028698, guid: 9fb2750fdc3fcfd408cedb98d4c2e249,
+    type: 2}
 --- !u!212 &212837737825914714
 SpriteRenderer:
   m_ObjectHideFlags: 1
