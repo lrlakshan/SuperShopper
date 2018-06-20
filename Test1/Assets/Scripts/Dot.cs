@@ -49,7 +49,7 @@ public class Dot : MonoBehaviour {
 
     //this is for debug and testing only
 
-        void onMouseOver()
+        private void onMouseOver()
     {
         if (Input.GetMouseButtonDown(1))
         {
