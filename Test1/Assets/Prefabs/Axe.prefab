@@ -75,13 +75,19 @@ MonoBehaviour:
   targetX: 0
   targetY: 0
   isMatched: 0
+  otherDot: {fileID: 0}
   swipeAngle: 0
   swipeResist: 1
+  isColorBomb: 0
   isColumnBomb: 0
   isRowBomb: 0
-  rowArrow: {fileID: 1579852680687134, guid: a02ff770222a04641a657235dfa47eba, type: 2}
-  columnArrow: {fileID: 1226396946028698, guid: 9fb2750fdc3fcfd408cedb98d4c2e249,
+  isAdjecentBomb: 0
+  adjecentMarker: {fileID: 1014686642404684, guid: b5045b6bef9ea7e4ab77d24ad11a0218,
     type: 2}
+  rowArrow: {fileID: 1077713227749312, guid: 5c8a9c0ff51c0b14c9666446d8354214, type: 2}
+  columnArrow: {fileID: 1465444829326758, guid: 4ad38b0ddce8ef541891a3b1e9077578,
+    type: 2}
+  colorBomb: {fileID: 1165362147772540, guid: ae0c34f3cde657e4db485b4eca99d332, type: 2}
 --- !u!212 &212837737825914714
 SpriteRenderer:
   m_ObjectHideFlags: 1

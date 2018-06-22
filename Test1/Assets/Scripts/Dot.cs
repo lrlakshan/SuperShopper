@@ -14,7 +14,7 @@ public class Dot : MonoBehaviour {
     public bool isMatched = false;
 
     private FindMatches findMatches;
-    private GameObject otherDot;
+    public GameObject otherDot;
     private Board board;
     private Vector2 firstTouchPosition;
     private Vector2 finalTouchPosition;
@@ -25,10 +25,14 @@ public class Dot : MonoBehaviour {
     public float swipeResist = 1f;
 
     [Header("power stuff")]
+    public bool isColorBomb;
     public bool isColumnBomb;
     public bool isRowBomb;
+    public bool isAdjecentBomb;
+    public GameObject adjecentMarker;
     public GameObject rowArrow;
     public GameObject columnArrow;
+    public GameObject colorBomb;
 
 
 	// Use this for initialization
@@ -36,6 +40,8 @@ public class Dot : MonoBehaviour {
 
         isColumnBomb = false;
         isRowBomb = false;
+        isColorBomb = false;
+        isAdjecentBomb = false;
 
         board = FindObjectOfType<Board>();
         findMatches = FindObjectOfType<FindMatches>();
@@ -49,24 +55,26 @@ public class Dot : MonoBehaviour {
 
     //this is for debug and testing only
 
-        private void onMouseOver()
+        private void OnMouseOver()
     {
-        if (Input.GetMouseButtonDown(1))
+        if(Input.GetMouseButtonDown(1))
         {
-            isRowBomb = true;
-            GameObject arrow = Instantiate(rowArrow, transform.position, Quaternion.identity);
-            arrow.transform.parent = this.transform;
+            isAdjecentBomb = true;
+            GameObject marker = Instantiate(adjecentMarker, transform.position, Quaternion.identity);
+            marker.transform.parent = this.transform;
         }
     }
 
     // Update is called once per frame
     void Update () {
         //FindMatches();
+        /*
         if (isMatched)
         {
             SpriteRenderer mysSprite = GetComponent<SpriteRenderer>();
             mysSprite.color = new Color(1f, 1f, 1f, .2f);
         }
+        */
         targetX = column;
         targetY = row;
         if(Mathf.Abs(targetX-transform.position.x)> .1)
@@ -109,6 +117,16 @@ public class Dot : MonoBehaviour {
 
     public IEnumerator CheckMoveCo()
     {
+        if (isColorBomb)
+        {
+            //this piece is a color bomb, nad other piece is the color to destroy
+            findMatches.MatchPiecesOfColur(otherDot.tag);
+            isMatched = true;
+        } else if (otherDot.GetComponent<Dot>().isColorBomb)
+        {
+            findMatches.MatchPiecesOfColur(this. gameObject.tag);
+            otherDot.GetComponent<Dot>().isMatched = true;
+        }
         yield return new WaitForSeconds(.5f); 
         if(otherDot != null)
         {
@@ -119,6 +137,7 @@ public class Dot : MonoBehaviour {
                 row = previousRow;
                 column = previousColumn;
                 yield return new WaitForSeconds(.5f);
+                board.currentDot = null;
                 board.currentState = GameState.move;
             }
             else
@@ -126,7 +145,7 @@ public class Dot : MonoBehaviour {
                 board.DestroyMatches();
                 
             }
-            otherDot = null;
+            //otherDot = null;
 
         } 
     }
@@ -155,9 +174,12 @@ public class Dot : MonoBehaviour {
             //Debug.Log(swipeAngle);
             MovePeices();
             board.currentState = GameState.wait;
-        }else
+            board.currentDot = this;
+        }
+        else
         {
             board.currentState = GameState.move;
+            
         }
     }
     void MovePeices()
@@ -234,5 +256,19 @@ public class Dot : MonoBehaviour {
             }
 
         }
+    }
+
+    public void MakeRowBomb()
+    {
+        isRowBomb = true;
+        GameObject arrow = Instantiate(rowArrow, transform.position, Quaternion.identity);
+        arrow.transform.parent = this.transform;
+    }
+
+    public void MakeColumnBomb()
+    {
+        isColumnBomb = true;
+        GameObject arrow = Instantiate(columnArrow, transform.position, Quaternion.identity);
+        arrow.transform.parent = this.transform;
     }
 }
