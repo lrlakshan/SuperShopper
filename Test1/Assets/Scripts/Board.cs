@@ -87,15 +87,113 @@ public class Board : MonoBehaviour {
         }
         return false;
     }
+    private bool ColumnOrRow()
+    {
+        int numberHorizontal = 0;
+        int numberVertical = 0;
+        Dot firsstPiece = findMatches.currentMatches[0].GetComponent<Dot>();
+        if (firsstPiece != null)
+        {
+            foreach (GameObject currentPiece in findMatches.currentMatches)
+            {
+                Dot dot = currentPiece.GetComponent<Dot>();
+                if(dot.row == firsstPiece.row)
+                {
+                    numberHorizontal++;
+                }
+                if (dot.column == firsstPiece.column)
+                {
+                    numberVertical++;
+                }
+            }
+        }
+        return(numberVertical == 5 || numberHorizontal == 5);
+}
+
+    private void CheckToMakeBombs()
+    {
+        if(findMatches.currentMatches.Count ==4 || findMatches.currentMatches.Count == 7){
+            findMatches.CheckBombs();
+        }
+        if (findMatches.currentMatches.Count == 5 || findMatches.currentMatches.Count == 8)
+        {
+            if (ColumnOrRow())
+            {
+                //Make a color Bomb
+                //Debug.Log("Make a color bomb");
+                //is the current dot matched
+                if(currentDot != null)
+                {
+                    if (currentDot.isMatched)
+                    {
+                        if (!currentDot.isColorBomb)
+                        {
+                            currentDot.isMatched = false;
+                            currentDot.MakeColorBomb();
+                        }
+                    }else
+                    {
+                        if(currentDot.otherDot != null)
+                        {
+                            Dot otherDot = currentDot.otherDot.GetComponent<Dot>();
+                            if (!otherDot.isMatched)
+                            {
+                                if (otherDot.isColorBomb)
+                                {
+                                    otherDot.isMatched = false;
+                                    otherDot.MakeColorBomb();
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
+            else
+            {
+                //Make an adjecent bomb
+                //Debug.Log("Make a Adjecent bomb");
+                //is the current dot matched
+                if (currentDot != null)
+                {
+                    if (currentDot.isMatched)
+                    {
+                        if (!currentDot.isAdjecentBomb)
+                        {
+                            currentDot.isMatched = false;
+                            currentDot.MakeAdjecentBomb();
+                        }
+                    }
+                    else
+                    {
+                        if (currentDot.otherDot != null)
+                        {
+                            Dot otherDot = currentDot.otherDot.GetComponent<Dot>();
+                            if (!otherDot.isMatched)
+                            {
+                                if (otherDot.isAdjecentBomb)
+                                {
+                                    otherDot.isMatched = false;
+                                    otherDot.MakeAdjecentBomb();
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
+        
+     }
 
     private void DestroyMatchesAt(int column, int row)
     {
         if(allDots[column, row].GetComponent<Dot>().isMatched)
         {
             //how many elements are in the matched pieces list from findmatch?
-            if(findMatches.currentMatches.Count == 4 || findMatches.currentMatches.Count == 7)
+            if(findMatches.currentMatches.Count >= 4)
             {
-                findMatches.CheckBombs();
+                CheckToMakeBombs();
             }
             
             GameObject particle = Instantiate(destroyEffect, allDots[column, row].transform.position, Quaternion.identity);
