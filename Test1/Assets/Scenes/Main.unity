@@ -277,7 +277,6 @@ MonoBehaviour:
   - {fileID: 1130815942472410, guid: 9e1d4f45e5a42cb42ada22a0e5d26423, type: 2}
   - {fileID: 1444863527094392, guid: 6026d83efca8c07428e976e5f5fc5b01, type: 2}
   - {fileID: 1041006492072882, guid: d2d2b0b537e730d4ebf82fe3effbf1aa, type: 2}
-  - {fileID: 1248865299581464, guid: b9a8c2110f64fb44c9d64b8208669232, type: 2}
   destroyEffect: {fileID: 1033279658360794, guid: f8a93341071ab54489bf277361e61174,
     type: 2}
   currentDot: {fileID: 0}
