@@ -13,9 +13,10 @@ public class Dot : MonoBehaviour {
     public int targetY;
     public bool isMatched = false;
 
+    private HintManager hintManager;
     private FindMatches findMatches;
     public GameObject otherDot;
-    private Board board;
+    public Board board;
     private Vector2 firstTouchPosition;
     private Vector2 finalTouchPosition;
     private Vector2 tempPosition;
@@ -43,6 +44,7 @@ public class Dot : MonoBehaviour {
         isColorBomb = false;
         isAdjecentBomb = false;
 
+        hintManager = FindObjectOfType<HintManager>();
         board = FindObjectOfType<Board>();
         findMatches = FindObjectOfType<FindMatches>();
         //targetX = (int)transform.position.x;
@@ -59,8 +61,8 @@ public class Dot : MonoBehaviour {
     {
         if(Input.GetMouseButtonDown(1))
         {
-            isAdjecentBomb = true;
-            GameObject marker = Instantiate(adjecentMarker, transform.position, Quaternion.identity);
+            isColorBomb = true;
+            GameObject marker = Instantiate(colorBomb, transform.position, Quaternion.identity);
             marker.transform.parent = this.transform;
         }
     }
@@ -152,6 +154,11 @@ public class Dot : MonoBehaviour {
 
     private void OnMouseDown()
     {
+        //destroy hint
+        if (hintManager != null)
+        {
+            hintManager.DestroyHint();
+        }
         if(board.currentState == GameState.move) {
             firstTouchPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             //Debug.Log(firstTouchPosition);
@@ -189,11 +196,17 @@ public class Dot : MonoBehaviour {
         otherDot = board.allDots[column + (int)direction.x, row + (int)direction.y];
         previousRow = row;
         previousColumn = column;
-        otherDot.GetComponent<Dot>().column += -1* (int)direction.x;
-        otherDot.GetComponent<Dot>().row += -1 * (int)direction.y;
-        column += (int)direction.x;
-        row += (int)direction.y;
-        StartCoroutine(CheckMoveCo());
+        if (otherDot != null)
+        {
+            otherDot.GetComponent<Dot>().column += -1 * (int)direction.x;
+            otherDot.GetComponent<Dot>().row += -1 * (int)direction.y;
+            column += (int)direction.x;
+            row += (int)direction.y;
+            StartCoroutine(CheckMoveCo());
+        }else
+        {
+            board.currentState = GameState.move;
+        }
     }
     void MovePeices()
     {

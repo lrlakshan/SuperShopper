@@ -8,6 +8,21 @@ public enum GameState
     move
 }
 
+public enum TileKind
+{
+    Breakable,
+    Blank,
+    Normal
+}
+
+[System.Serializable]
+public class TileType
+{
+    public int x;
+    public int y;
+    public TileKind tileKind;
+}
+
 public class Board : MonoBehaviour {
 
     public GameState currentState = GameState.move;
@@ -15,44 +30,86 @@ public class Board : MonoBehaviour {
     public int height;
     public int offset;//sliding down objects
     public GameObject tilePrefabs;
+    public GameObject breakableTilePrefab;
     public GameObject[] dots;
     public GameObject destroyEffect;
-    private BackgroundTile[,] allTiles;
+    public TileType[] boardLayout;
+    private bool[,] blankSpaces;
+    private BackgroundTile[,] breakableTiles;
     public GameObject[,] allDots;
     public Dot currentDot;
     private FindMatches findMatches;
+    public int BasePieceValue = 20;
+    private int streakValue = 1;
+    private ScoreManager scoreManager;
 	// Use this for initialization
 	void Start () {
+        scoreManager = FindObjectOfType<ScoreManager>();
+        breakableTiles = new BackgroundTile[width, height];
         findMatches = FindObjectOfType<FindMatches>();
-        allTiles = new BackgroundTile[width, height];
+        blankSpaces = new bool[width, height];
         allDots = new GameObject[width, height];
         SetUp();
 	}
+
+    public void GenerateBlankSpaces()
+    {
+        for(int i = 0; i < boardLayout.Length; i++)
+        {
+            if (boardLayout[i].tileKind == TileKind.Blank)
+            {
+                blankSpaces[boardLayout[i].x, boardLayout[i].y] = true;
+            }
+        }
+    }
+
+    public void GenerateBreakableTiles()
+    {
+        //look at all tiles in the layout
+        for (int i = 0; i < boardLayout.Length; i++)
+        {
+            //if a tile is a jelly tile
+            if (boardLayout[i].tileKind == TileKind.Breakable)
+            {
+                //craete a jelly tile at the position
+                Vector2 tempPosition = new Vector2(boardLayout[i].x, boardLayout[i].y);
+                GameObject tile = Instantiate(breakableTilePrefab, tempPosition, Quaternion.identity);
+                breakableTiles[boardLayout[i].x, boardLayout[i].y] = tile.GetComponent<BackgroundTile>();
+
+            }
+        }
+    }
 	
 	private void SetUp(){
+        GenerateBlankSpaces();
+        GenerateBreakableTiles();
         for(int i = 0; i<width; i++)
         {
-            for(int j = 0; j<height; j++)
+            for (int j = 0; j < height; j++)
             {
-                Vector2 tempPosition = new Vector2(i, j + offset);
-                GameObject backgroundTile = Instantiate(tilePrefabs, tempPosition, Quaternion.identity);
-                backgroundTile.transform.parent = this.transform;
-                backgroundTile.name = "( " + i + "," + j + " )";
-                int dotToUse = Random.Range(0, dots.Length);
-                int maxTimes = 0;
-                while (MatchesAt(i, j, dots[dotToUse]) && maxTimes <100)
+                if (!blankSpaces[i, j])
                 {
-                    dotToUse = Random.Range(0, dots.Length);
-                    maxTimes++;
-                }
-                maxTimes = 0;
-                GameObject dot = Instantiate(dots[dotToUse], tempPosition, Quaternion.identity);
-                dot.GetComponent<Dot>().row = j;
-                dot.GetComponent<Dot>().column = i;
+                    Vector2 tempPosition = new Vector2(i, j + offset);
+                    Vector2 tilePosition = new Vector2(i,j);
+                    GameObject backgroundTile = Instantiate(tilePrefabs, tilePosition, Quaternion.identity);
+                    backgroundTile.transform.parent = this.transform;
+                    backgroundTile.name = "( " + i + "," + j + " )";
+                    int dotToUse = Random.Range(0, dots.Length);
+                    int maxTimes = 0;
+                    while (MatchesAt(i, j, dots[dotToUse]) && maxTimes < 100)
+                    {
+                        dotToUse = Random.Range(0, dots.Length);
+                        maxTimes++;
+                    }
+                    maxTimes = 0;
+                    GameObject dot = Instantiate(dots[dotToUse], tempPosition, Quaternion.identity);
+                    dot.GetComponent<Dot>().row = j;
+                    dot.GetComponent<Dot>().column = i;
 
-                dot.transform.parent = this.transform;
-                dot.name = "( " + i + "," + j + " )";
-                allDots[i, j] = dot;
+                    dot.transform.parent = this.transform;
+                    dot.name = "( " + i + "," + j + " )";
+                    allDots[i, j] = dot;
+                }
             }
         }
     }
@@ -61,27 +118,38 @@ public class Board : MonoBehaviour {
     {
         if(column > 1 && row > 1)
         {
-            if(allDots[column - 1, row].tag == piece.tag && allDots [column -2,row].tag == piece.tag)
-            {
-                return true;
+            if (allDots[column - 1, row] != null && allDots[column - 2, row] != null) {
+                if (allDots[column - 1, row].tag == piece.tag && allDots[column - 2, row].tag == piece.tag)
+                {
+                    return true;
+                }
             }
-            if (allDots[column, row -1].tag == piece.tag && allDots[column , row - 2].tag == piece.tag)
-            {
-                return true;
-            }
-        }else if(column < +1 || row <= 1){
-            if (row > 1)
+            if (allDots[column, row - 1] != null && allDots[column, row - 2] != null)
             {
                 if (allDots[column, row - 1].tag == piece.tag && allDots[column, row - 2].tag == piece.tag)
                 {
                     return true;
                 }
             }
-            if(column > 1)
-            { 
-                if (allDots[column -1, row].tag == piece.tag && allDots[column - 2, row].tag == piece.tag)
+        }else if(column < +1 || row <= 1){
+            if (row > 1)
+            {
+                if (allDots[column, row - 1] != null && allDots[column, row - 2] != null)
                 {
-                    return true;
+                    if (allDots[column, row - 1].tag == piece.tag && allDots[column, row - 2].tag == piece.tag)
+                    {
+                        return true;
+                    }
+                }
+            }
+            if (column > 1)
+            {
+                if (allDots[column - 1, row] != null && allDots[column - 2, row] != null)
+                {
+                    if (allDots[column - 1, row].tag == piece.tag && allDots[column - 2, row].tag == piece.tag)
+                    {
+                        return true;
+                    }
                 }
             }
         }
@@ -112,7 +180,7 @@ public class Board : MonoBehaviour {
 
     private void CheckToMakeBombs()
     {
-        if(findMatches.currentMatches.Count ==4 || findMatches.currentMatches.Count == 7){
+        if(findMatches.currentMatches.Count == 4 || findMatches.currentMatches.Count == 7){
             findMatches.CheckBombs();
         }
         if (findMatches.currentMatches.Count == 5 || findMatches.currentMatches.Count == 8)
@@ -136,9 +204,9 @@ public class Board : MonoBehaviour {
                         if(currentDot.otherDot != null)
                         {
                             Dot otherDot = currentDot.otherDot.GetComponent<Dot>();
-                            if (!otherDot.isMatched)
+                            if (otherDot.isMatched)
                             {
-                                if (otherDot.isColorBomb)
+                                if (!otherDot.isColorBomb)
                                 {
                                     otherDot.isMatched = false;
                                     otherDot.MakeColorBomb();
@@ -169,9 +237,9 @@ public class Board : MonoBehaviour {
                         if (currentDot.otherDot != null)
                         {
                             Dot otherDot = currentDot.otherDot.GetComponent<Dot>();
-                            if (!otherDot.isMatched)
+                            if (otherDot.isMatched)
                             {
-                                if (otherDot.isAdjecentBomb)
+                                if (!otherDot.isAdjecentBomb)
                                 {
                                     otherDot.isMatched = false;
                                     otherDot.MakeAdjecentBomb();
@@ -195,10 +263,26 @@ public class Board : MonoBehaviour {
             {
                 CheckToMakeBombs();
             }
+
+            //Does a tile need to break
+            if(breakableTiles[column, row] != null)
+            {
+                //if it does, get one damage
+                breakableTiles[column, row].TakeDamage(1);
+                if(breakableTiles[column, row].hitPoints <= 0)
+                {
+                    breakableTiles[column, row] = null;
+                }
+            }
             
             GameObject particle = Instantiate(destroyEffect, allDots[column, row].transform.position, Quaternion.identity);
             Destroy(particle, .5f); 
-            Destroy(allDots[column, row]);
+            Destroy(allDots[column, row]);  
+            GameObject obj1 = allDots[column, row]; 
+            if (obj1.gameObject.CompareTag("Axe"))
+            {
+                scoreManager.IncreaseScore(BasePieceValue * streakValue);
+            }
             allDots[column, row] = null;
         }
     }
@@ -215,8 +299,38 @@ public class Board : MonoBehaviour {
             }
         }
         findMatches.currentMatches.Clear();
-        StartCoroutine(DecreaseRowCo());
+        StartCoroutine(DecreaseRowCo2());
     }
+
+    private IEnumerator DecreaseRowCo2()
+    {
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                //if the current spot is not blank and is empty
+                if(!blankSpaces[i,j] && allDots[i,j] == null)
+                {
+                    //loop from the space above to the top of the column
+                    for(int k = j+1; k < height; k++)
+                    {
+                        //if a dot is found 
+                        if(allDots[i,k] != null)
+                        {
+                            //move that dot tot the empty space
+                            allDots[i, k].GetComponent<Dot>().row = j;
+                            //set that spot to null
+                            allDots[i, k] = null;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        yield return new WaitForSeconds(.4f);
+        StartCoroutine(FillBoardCo());
+    }
+
     private IEnumerator DecreaseRowCo()
     {
         int nullCounter = 0;
@@ -246,7 +360,7 @@ public class Board : MonoBehaviour {
         {
             for(int j = 0; j < height; j++)
             {
-                if(allDots[i,j] == null)
+                if(allDots[i,j] == null && !blankSpaces[i,j])
                 {
                     Vector2 tempPosition = new Vector2(i, j + offset);
                     int dotToUse = Random.Range(0, dots.Length);
@@ -285,6 +399,7 @@ public class Board : MonoBehaviour {
 
         while (MatchesOnBoard())
         {
+            streakValue ++;
             yield return new WaitForSeconds(.5f);
             DestroyMatches();
         }
@@ -292,7 +407,154 @@ public class Board : MonoBehaviour {
         currentDot = null;
 
         yield return new WaitForSeconds(.5f);
+
+        if (IsDeadlocked())
+        {
+            ShuffleBoard();
+            Debug.Log("Deadlocked!!!");
+        }
+
         currentState = GameState.move;
+        streakValue = 1;
 
     }
+
+    private void SwitchPieces(int column, int row, Vector2 direction)
+    {
+        //take the first piece and save it in a folder
+        GameObject holder = allDots[column + (int)direction.x, row + (int)direction.y] as GameObject;
+        //switching the first dot to be the second position
+        allDots[column + (int)direction.x, row + (int)direction.y] = allDots[column, row];
+        // set the first dot to be second dot
+        allDots[column, row] = holder;
+    }
+
+    private bool CheckForMatches()
+    {
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                if (allDots[i, j] != null)
+                {
+                    //Make sure that one and two to the right are in the board
+                    if (i < width - 2)
+                    {
+                        //check if the dots to the right and two to the right exist
+                        if (allDots[i + 1, j] != null && allDots[i + 2, j] != null)
+                        {
+                            if (allDots[i + 1, j].tag == allDots[i, j].tag && allDots[i + 2, j].tag == allDots[i, j].tag)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+
+                    if (j < height - 2)
+                    {
+
+                        if (allDots[i, j + 1] != null && allDots[i, j + 2] != null)
+                        {
+                            if (allDots[i, j + 1].tag == allDots[i, j].tag && allDots[i, j + 2].tag == allDots[i, j].tag)
+                            {
+                                return true;
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+
+                    return false;
+    }
+
+    public bool SwitchAndCheck(int column, int row, Vector2 direction)
+    {
+        SwitchPieces(column, row, direction);
+        if (CheckForMatches())
+        {
+            SwitchPieces(column, row, direction);
+            return true;
+        }
+        SwitchPieces(column, row, direction);
+        return false;
+    }
+    private bool IsDeadlocked()
+    {
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                if (allDots[i, j] != null)
+                {
+
+                    if (i < width - 2)
+                    {
+                        if (SwitchAndCheck(i, j, Vector2.right))
+                        {
+                            return false;
+                        }
+                    }
+                    if(j < height - 2)
+                    {
+                        if (SwitchAndCheck(i, j, Vector2.up))
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+
+                        return true;
+    }
+
+    private void ShuffleBoard()
+    {
+        //create a list of gameobjects
+        List<GameObject> newBoard = new List<GameObject>();
+        //add every piece to the list
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                if (allDots[i, j] != null)
+                {
+                    newBoard.Add(allDots[i, j]);
+                }
+            }
+        }
+        //for every spot on the board
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                //if this spot should not be blank
+                if (!blankSpaces[i, j])
+                {
+                    int PieceToUse = Random.Range(0, newBoard.Count);
+                    //make container for the piece
+                    int maxTimes = 0;
+                    while (MatchesAt(i, j, newBoard[PieceToUse]) && maxTimes < 100)
+                    {
+                        PieceToUse = Random.Range(0, newBoard.Count);
+                        maxTimes++;
+                    }
+                    Dot piece = newBoard[PieceToUse].GetComponent<Dot>();
+                    maxTimes = 0;
+                    piece.column = i;
+                    piece.row = j;
+                    allDots[i, j] = newBoard[PieceToUse];
+                    newBoard.Remove(newBoard[PieceToUse]);
+                }
+            }
+        }
+        //check if it is still deadlocked
+        if (IsDeadlocked())
+        {
+            ShuffleBoard();
+        }
+    }
 }
+  
