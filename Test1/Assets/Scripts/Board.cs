@@ -5,7 +5,10 @@ using UnityEngine;
 public enum GameState
 {
     wait,
-    move
+    move,
+    win,
+    lose,
+    pause
 }
 
 public enum TileKind
@@ -39,17 +42,25 @@ public class Board : MonoBehaviour {
     public GameObject[,] allDots;
     public Dot currentDot;
     private FindMatches findMatches;
-    public int BasePieceValue = 20;
+    public int BasePieceValue = 1;
+    public int BaseValue = 1;
     private int streakValue = 1;
     private ScoreManager scoreManager;
+    private SoundManager soundManager;
+    private GoalManager goalManager;
+    public float refilDelay = 0.5f;
+    public int[] scoreGoals;
 	// Use this for initialization
-	void Start () {
+	public void Start () {
+        goalManager = FindObjectOfType<GoalManager>();
+        soundManager = FindObjectOfType<SoundManager>();
         scoreManager = FindObjectOfType<ScoreManager>();
         breakableTiles = new BackgroundTile[width, height];
         findMatches = FindObjectOfType<FindMatches>();
         blankSpaces = new bool[width, height];
         allDots = new GameObject[width, height];
         SetUp();
+        currentState = GameState.pause;
 	}
 
     public void GenerateBlankSpaces()
@@ -80,7 +91,7 @@ public class Board : MonoBehaviour {
         }
     }
 	
-	private void SetUp(){
+	public void SetUp(){
         GenerateBlankSpaces();
         GenerateBreakableTiles();
         for(int i = 0; i<width; i++)
@@ -274,6 +285,18 @@ public class Board : MonoBehaviour {
                     breakableTiles[column, row] = null;
                 }
             }
+
+            if(goalManager != null)
+            {
+                goalManager.CompareGoal(allDots[column, row].tag.ToString());
+                goalManager.UpdateGoals();
+            }
+
+            //does the sound manager exist
+            if(soundManager != null)
+            {
+                soundManager.PlayRandomDestroyNoice();
+            }
             
             GameObject particle = Instantiate(destroyEffect, allDots[column, row].transform.position, Quaternion.identity);
             Destroy(particle, .5f); 
@@ -281,8 +304,29 @@ public class Board : MonoBehaviour {
             GameObject obj1 = allDots[column, row]; 
             if (obj1.gameObject.CompareTag("Axe"))
             {
-                scoreManager.IncreaseScore(BasePieceValue * streakValue);
+                scoreManager.IncreaseScore1(BaseValue*streakValue);
             }
+            else if (obj1.gameObject.CompareTag("Cargills ice cream"))
+            {
+                scoreManager.IncreaseScore2(BaseValue*streakValue);
+            }
+            else if (obj1.gameObject.CompareTag("Cloguard"))
+            {
+                scoreManager.IncreaseScore3(BaseValue * streakValue);
+            }
+            else if (obj1.gameObject.CompareTag("Closeup"))
+            {
+                scoreManager.IncreaseScore4(BaseValue * streakValue);
+            }
+            else if (obj1.gameObject.CompareTag("EH ice cream"))
+            {
+                scoreManager.IncreaseScore5(BaseValue * streakValue);
+            }
+            else if (obj1.gameObject.CompareTag("Signal"))
+            {
+                scoreManager.IncreaseScore6(BaseValue * streakValue);
+            }
+
             allDots[column, row] = null;
         }
     }
@@ -327,7 +371,7 @@ public class Board : MonoBehaviour {
                 }
             }
         }
-        yield return new WaitForSeconds(.4f);
+        yield return new WaitForSeconds(refilDelay*0.5f);
         StartCoroutine(FillBoardCo());
     }
 
@@ -349,7 +393,7 @@ public class Board : MonoBehaviour {
             }
             nullCounter = 0;
         }
-        yield return new WaitForSeconds(.4f);
+        yield return new WaitForSeconds(refilDelay * 0.5f);
         StartCoroutine(FillBoardCo());
     }
 
@@ -364,6 +408,15 @@ public class Board : MonoBehaviour {
                 {
                     Vector2 tempPosition = new Vector2(i, j + offset);
                     int dotToUse = Random.Range(0, dots.Length);
+                    int maxTimes = 0;
+                    while (MatchesAt(i, j, dots[dotToUse]) && maxTimes < 100)
+                    {
+                        maxTimes++;
+                        dotToUse = Random.Range(0, dots.Length);
+                        
+                    }
+                    
+                    maxTimes = 0;
                     GameObject piece = Instantiate(dots[dotToUse], tempPosition, Quaternion.identity);
                     allDots[i, j] = piece;
                     piece.GetComponent<Dot>().row = j;
@@ -395,18 +448,19 @@ public class Board : MonoBehaviour {
     private IEnumerator FillBoardCo()
     {
         RefilBoard();
-        yield return new WaitForSeconds(.5f);
+        yield return new WaitForSeconds(refilDelay);
 
         while (MatchesOnBoard())
         {
-            streakValue ++;
-            yield return new WaitForSeconds(.5f);
+            //streakValue ++;
             DestroyMatches();
+            yield return new WaitForSeconds(2*refilDelay);
+            
         }
         findMatches.currentMatches.Clear();
         currentDot = null;
 
-        yield return new WaitForSeconds(.5f);
+        yield return new WaitForSeconds(refilDelay);
 
         if (IsDeadlocked())
         {
@@ -415,7 +469,7 @@ public class Board : MonoBehaviour {
         }
 
         currentState = GameState.move;
-        streakValue = 1;
+        //streakValue = 1;
 
     }
 
@@ -510,7 +564,7 @@ public class Board : MonoBehaviour {
                         return true;
     }
 
-    private void ShuffleBoard()
+    public void ShuffleBoard()
     {
         //create a list of gameobjects
         List<GameObject> newBoard = new List<GameObject>();

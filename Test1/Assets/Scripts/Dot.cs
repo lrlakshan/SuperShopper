@@ -13,10 +13,11 @@ public class Dot : MonoBehaviour {
     public int targetY;
     public bool isMatched = false;
 
+    private EndGameManager endGameManager;
     private HintManager hintManager;
     private FindMatches findMatches;
     public GameObject otherDot;
-    public Board board;
+    private Board board;
     private Vector2 firstTouchPosition;
     private Vector2 finalTouchPosition;
     private Vector2 tempPosition;
@@ -44,6 +45,7 @@ public class Dot : MonoBehaviour {
         isColorBomb = false;
         isAdjecentBomb = false;
 
+        endGameManager = FindObjectOfType<EndGameManager>();
         hintManager = FindObjectOfType<HintManager>();
         board = FindObjectOfType<Board>();
         findMatches = FindObjectOfType<FindMatches>();
@@ -144,6 +146,13 @@ public class Dot : MonoBehaviour {
             }
             else
             {
+                if(endGameManager != null)
+                {
+                    if(endGameManager.requirements.gameType == GameType.Moves)
+                    {
+                        endGameManager.DecreaseCounterValue();
+                    }
+                }
                 board.DestroyMatches();
                 
             }
@@ -322,6 +331,7 @@ public class Dot : MonoBehaviour {
         isColorBomb = true;
         GameObject color = Instantiate(colorBomb, transform.position, Quaternion.identity);
         color.transform.parent = this.transform;
+        this.gameObject.tag = "Color";
     }
     public void MakeAdjecentBomb()
     {
